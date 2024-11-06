@@ -44,7 +44,6 @@ vaders = pd.DataFrame(res).T
 vaders = vaders.reset_index().rename(columns={'index': 'Id'})
 vaders = vaders.merge(df, how='left')
 
-# print(vaders.head())
 
 ax = sns.barplot(data=vaders, x='Score', y='compound')
 ax.set_title('score')
