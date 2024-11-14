@@ -37,6 +37,9 @@ class Preprocessing:
     @staticmethod
     def lemmatization(data_frame) -> list:
         import spacy
+        
+        #python -m spacy download en_core_web_md
+
         nlp = spacy.load('en_core_web_md')
         lemmatized_words = []
         for data in data_frame:
