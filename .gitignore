@@ -1,4 +1,5 @@
 
 ai
-src/__pycache__
+
+Tweets/src/__pycache__
 *.pyc

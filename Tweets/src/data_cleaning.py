@@ -19,25 +19,37 @@ class DataCleaning:
         data_frame = data_frame.fillna('').astype(str)
         return data_frame
 
+
     @staticmethod
-    def remove_stopwords(data_frame) -> list:
+    def remove_stopwords(data_frame) -> pd.DataFrame:
         from nltk.corpus import stopwords
-
         stop_words = set(stopwords.words('english'))
-        filtered_texts = []
 
-        for data in data_frame:
-            tokens = data.split()
-            filtered_texts.append(" ".join([word for word in tokens if word.lower() not in stop_words]))
+        new_data_frame: pd.DataFrame = data_frame.copy()
+        for column in new_data_frame.columns:
+            new_data_frame[column] = new_data_frame[column].apply(
+                lambda row: ' '.join([word for word in row.split() if word.lower() not in stop_words])
+            )
+        
+        return new_data_frame
+    
+    
 
-        return filtered_texts
-    
-    
-    
 if __name__ == '__main__':
 
-    DataCleaning.load_data()
-    # data_set = DataCleaning.load_data()
-    # for data in data_set:
-    #     print(data)
-    # print(data_set)
+    data_frame = DataCleaning.load_data()
+    data_set = DataCleaning.remove_stopwords(data_frame)
+    
+    for column in data_frame.columns:
+        for row in data_frame[column]:
+            print(f"row before: {row}")
+            break
+        break
+    for column in data_set.columns:
+        for row in data_set[column]:
+            print(f"row after: {row}")
+            break
+        break
+    
+    print(f"type of data frame : {type(data_frame)}, type of data set : {type(data_set)}")
+    
