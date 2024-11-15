@@ -4,20 +4,40 @@ import pandas as pd
 
 class DataCleaning:
 
+    @staticmethod
+    def load_data():
+        file_paths = {
+            "positive": '../data/raw/processedPositive.csv',
+            "negative": '../data/raw/processedNegative.csv',
+            "neutral": '../data/raw/processedNeutral.csv'
+        }
+        
+        data_frame = pd.DataFrame()
+        for label, path in file_paths.items():
+            data_frame[label] = pd.read_csv(path, header=None).T.squeeze()
 
-	@staticmethod
-	def load_data(): 
-		positive = pd.DataFrame()
-		negative = pd.DataFrame()
-		neutral = pd.DataFrame()
+        data_frame = data_frame.fillna('').astype(str)
+        return data_frame
 
-		positive["positive"] = pd.read_csv('../data/raw/processedPositive.csv', header=None ).T.squeeze()
-		negative["negative"] = pd.read_csv('../data/raw/processedNegative.csv', header=None).T.squeeze()
-		neutral["neutral"] = pd.read_csv('../data/raw/processedNeutral.csv', header=None).T.squeeze()
+    @staticmethod
+    def remove_stopwords(data_frame) -> list:
+        from nltk.corpus import stopwords
 
-		merged = pd.merge(positive, negative, left_index=True, right_index=True)
-		data_frame = pd.merge(merged, neutral, left_index=True, right_index=True)
+        stop_words = set(stopwords.words('english'))
+        filtered_texts = []
 
+        for data in data_frame:
+            tokens = data.split()
+            filtered_texts.append(" ".join([word for word in tokens if word.lower() not in stop_words]))
 
-		data_frame = data_frame.fillna('').astype(str)
-		return data_frame
+        return filtered_texts
+    
+    
+    
+if __name__ == '__main__':
+
+    DataCleaning.load_data()
+    # data_set = DataCleaning.load_data()
+    # for data in data_set:
+    #     print(data)
+    # print(data_set)
