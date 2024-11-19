@@ -34,7 +34,8 @@ class Preprocessing:
         tokenized_data_frame = Preprocessing.tokenization(data_frame)
         
         for column in tokenized_data_frame.columns:
-            stemmed_data[column] = tokenized_data_frame[column].apply(lambda row: [stemmer.stem(word) for word in row])
+            stemmed_data[column] = tokenized_data_frame[column].apply(
+                lambda row: [stemmer.stem(word) for word in row])
         
 
         return stemmed_data
@@ -50,71 +51,39 @@ class Preprocessing:
             )
         return lemmatized_words
 
-    # @staticmethod
-    # def n_grams(data_frame, n=2):
-    #     n_grams = []
-    #     for data in data_frame:
-    #         n_grams.append(list(ngrams(data, n)))
-    #     return n_grams
+    
+    @staticmethod
+    def _get_closest_word(word, threshold=80):
+        from rapidfuzz import process
+
+        match = process.extractOne(word, words.words(), score_cutoff=threshold)
+        if match and len(match[0]) > 1:
+            return match[0]
+        return word
 
 
     @staticmethod
-    def stemming_with_jaccard_distance(data_frame) -> list:
-        correct_words = words.words()
+    def stemming_with_misspelling(data_frame) -> list:
         stemmer = PorterStemmer()
-        stemmed_words = []
+        corrected_stemmed_data = pd.DataFrame()
         tokenized_data_frame = Preprocessing.tokenization(data_frame)
-
-        for data in tokenized_data_frame:
-            corrected_data = []
-            for word in data:
-                distances = []
-                word_bigrams = set(ngrams(word, 2))
-                if word_bigrams:
-                    distances = [
-                        (jaccard_distance(word_bigrams, set(ngrams(w, 2))), w)
-                        for w in correct_words
-                        if set(ngrams(w, 2))
-                    ]
-                closest_word = min(distances, key=lambda x: x[0])[1] if distances else word
-                stemmed_word = stemmer.stem(closest_word)
-                corrected_data.append(stemmed_word)
-            stemmed_words.append(corrected_data)
-        return stemmed_words
-
-    # @staticmethod
-    # def stemming_with_levenshtein_distance(data_frame) -> list:
-    #     correct_words = words.words()
-    #     stemmer = PorterStemmer()
-    #     stemmed_words = []
-    #     tokenized_data_frame = Preprocessing.tokenization(data_frame)
-    #     for data in tokenized_data_frame:
-    #         corrected_data = []
-    #         for word in data:
-    #             temp = [(edit_distance(word, w),w) for w in correct_words if w[0]==word[0]] 
-    #             closest_word = min(temp, key=lambda x: x[0])[1] if temp else word
-    #             stemmed_word = stemmer.stem(closest_word)
-    #             corrected_data.append(stemmed_word)
-    #         stemmed_words.append(corrected_data)
-    #     return stemmed_words
+        for column in tokenized_data_frame.columns:
+            corrected_stemmed_data[column] = tokenized_data_frame[column].apply(
+                lambda row: [stemmer.stem( Preprocessing._get_closest_word(token)) for token in row])
+        return corrected_stemmed_data
 
 
-    # @staticmethod
-    # def lemmatization_with_misspelling(data_frame):
-    #     nlp = spacy.load('en_core_web_md')
-    #     lemmatized_words = []
-    #     correct_words = words.words()
+
+    @staticmethod
+    def lemmatization_with_misspelling(data_set):
+        nlp = spacy.load('en_core_web_md')
+        corrected_lemmatizide_data = pd.DataFrame()
+
+        for column in data_set.columns:
+            corrected_lemmatizide_data[column] = data_set[column].astype(str).apply(
+                lambda row: [token.lemma_ 
+                             for token in nlp(" ".join(Preprocessing._get_closest_word(token) 
+                                                       for token in row.split()))]
+            )
         
-    #     for data in data_frame:
-    #         data = nlp(data)
-    #         corrected_data = []
-    #         for word in data:
-    #             word_text = word.text
-    #             temp = [(edit_distance(word_text, w), w) for w in correct_words if w[0] == word_text[0]]
-    #             closest_word = min(temp, key=lambda x: x[0])[1] if temp else word_text
-    #             lemma = nlp(closest_word)[0].lemma_
-    #             corrected_data.append(lemma)
-            
-    #         lemmatized_words.append(corrected_data)
-        
-    #     return lemmatized_words
+        return corrected_lemmatizide_data

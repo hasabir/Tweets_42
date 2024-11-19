@@ -35,14 +35,18 @@ class DataPreparation:
     
     
     @staticmethod
-    def remove_punctuation(data_frame) -> pd.DataFrame:
+    def clean_data(data_frame) -> pd.DataFrame:
         import string
-        
+        import pandas as pd
+
         new_data_frame: pd.DataFrame = data_frame.copy()
         for column in new_data_frame.columns:
             new_data_frame[column] = new_data_frame[column].apply(
-                lambda row: row.translate(str.maketrans('', '', string.punctuation))
+                lambda row: ''.join(
+                    char for char in row if char not in string.punctuation and not char.isdigit()
+                ).lower()
             )
-        
+            
         return new_data_frame
+
     
