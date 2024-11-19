@@ -40,16 +40,14 @@ class Preprocessing:
         return stemmed_data
 
     @staticmethod
-    def lemmatization(data_frame) -> list:
-        import spacy
-        
-        #python -m spacy download en_core_web_md
+    def lemmatization(data_set) -> list:
 
-        nlp = spacy.load('en_core_web_md')
-        lemmatized_words = []
-        for column in data_frame:
-            data = nlp(data)
-            lemmatized_words.append([token.lemma_ for token in data])
+        nlp = spacy.load('en_core_web_md') #python -m spacy download en_core_web_md
+        lemmatized_words = pd.DataFrame()
+        for column in data_set.columns:
+            lemmatized_words[column] = data_set[column].astype(str).apply(
+                lambda row: [token.lemma_ for token in nlp(row)]
+            )
         return lemmatized_words
 
     # @staticmethod
@@ -60,29 +58,29 @@ class Preprocessing:
     #     return n_grams
 
 
-    # @staticmethod
-    # def stemming_with_jaccard_distance(data_frame) -> list:
-    #     correct_words = words.words()
-    #     stemmer = PorterStemmer()
-    #     stemmed_words = []
-    #     tokenized_data_frame = Preprocessing.tokenization(data_frame)
+    @staticmethod
+    def stemming_with_jaccard_distance(data_frame) -> list:
+        correct_words = words.words()
+        stemmer = PorterStemmer()
+        stemmed_words = []
+        tokenized_data_frame = Preprocessing.tokenization(data_frame)
 
-    #     for data in tokenized_data_frame:
-    #         corrected_data = []
-    #         for word in data:
-    #             distances = []
-    #             word_bigrams = set(ngrams(word, 2))
-    #             if word_bigrams:
-    #                 distances = [
-    #                     (jaccard_distance(word_bigrams, set(ngrams(w, 2))), w)
-    #                     for w in correct_words
-    #                     if set(ngrams(w, 2))
-    #                 ]
-    #             closest_word = min(distances, key=lambda x: x[0])[1] if distances else word
-    #             stemmed_word = stemmer.stem(closest_word)
-    #             corrected_data.append(stemmed_word)
-    #         stemmed_words.append(corrected_data)
-    #     return stemmed_words
+        for data in tokenized_data_frame:
+            corrected_data = []
+            for word in data:
+                distances = []
+                word_bigrams = set(ngrams(word, 2))
+                if word_bigrams:
+                    distances = [
+                        (jaccard_distance(word_bigrams, set(ngrams(w, 2))), w)
+                        for w in correct_words
+                        if set(ngrams(w, 2))
+                    ]
+                closest_word = min(distances, key=lambda x: x[0])[1] if distances else word
+                stemmed_word = stemmer.stem(closest_word)
+                corrected_data.append(stemmed_word)
+            stemmed_words.append(corrected_data)
+        return stemmed_words
 
     # @staticmethod
     # def stemming_with_levenshtein_distance(data_frame) -> list:
