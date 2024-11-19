@@ -2,14 +2,14 @@
 import pandas as pd
 
 
-class DataCleaning:
+class DataPreparation:
 
     @staticmethod
     def load_data():
         file_paths = {
-            "positive": '../data/raw/processedPositive.csv',
-            "negative": '../data/raw/processedNegative.csv',
-            "neutral": '../data/raw/processedNeutral.csv'
+            "positive": '../data/processedPositive.csv',
+            "negative": '../data/processedNegative.csv',
+            "neutral": '../data/processedNeutral.csv'
         }
         
         data_frame = pd.DataFrame()
@@ -34,22 +34,15 @@ class DataCleaning:
         return new_data_frame
     
     
-
-if __name__ == '__main__':
-
-    data_frame = DataCleaning.load_data()
-    data_set = DataCleaning.remove_stopwords(data_frame)
-    
-    for column in data_frame.columns:
-        for row in data_frame[column]:
-            print(f"row before: {row}")
-            break
-        break
-    for column in data_set.columns:
-        for row in data_set[column]:
-            print(f"row after: {row}")
-            break
-        break
-    
-    print(f"type of data frame : {type(data_frame)}, type of data set : {type(data_set)}")
+    @staticmethod
+    def remove_punctuation(data_frame) -> pd.DataFrame:
+        import string
+        
+        new_data_frame: pd.DataFrame = data_frame.copy()
+        for column in new_data_frame.columns:
+            new_data_frame[column] = new_data_frame[column].apply(
+                lambda row: row.translate(str.maketrans('', '', string.punctuation))
+            )
+        
+        return new_data_frame
     
