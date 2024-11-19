@@ -2,3 +2,6 @@ spacy
 pandas
 scikit-learn
 ekphrasis
+seaborn
+numpy
+sys
