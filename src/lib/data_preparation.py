@@ -23,7 +23,7 @@ class DataPreparation:
     @staticmethod
     def remove_stopwords(data_frame) -> pd.DataFrame:
         from nltk.corpus import stopwords
-        stop_words = set(stopwords.words('english'))
+        stop_words = set(stopwords.words('english')) #python -m nltk.downloader stopwords
 
         new_data_frame: pd.DataFrame = data_frame.copy()
         for column in new_data_frame.columns:

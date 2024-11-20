@@ -2,12 +2,8 @@ import spacy
 import pandas as pd
 import nltk
 from nltk.corpus import words
-from nltk.metrics.distance import edit_distance
 from nltk.stem import PorterStemmer
-from nltk.metrics.distance import jaccard_distance 
-from nltk.util import ngrams
 from nltk.corpus import words 
-from nltk.metrics.distance  import edit_distance 
 nltk.download('words') 
 
 
@@ -87,3 +83,28 @@ class Preprocessing:
             )
         
         return corrected_lemmatizide_data
+    
+    @staticmethod
+    def correct_slang_words(data_set):
+        from ekphrasis.classes.preprocessor import TextPreProcessor
+        from ekphrasis.dicts.emoticons import emoticons
+        from ekphrasis.classes.tokenizer import SocialTokenizer
+        import pandas as pd
+
+        text_processor = TextPreProcessor(
+            normalize=['url', 'email', 'percent', 'money', 'phone', 'time', 'date', 'number'],
+            annotate={"hashtag", "allcaps", "elongated", "repeated", "emphasis", "censored"},
+            fix_html=True,
+            unpack_hashtags=True,
+            unpack_contractions=True,
+            spell_correct_elong=True,
+            tokenizer=SocialTokenizer(lowercase=True).tokenize,
+            dicts=[emoticons]
+        )
+
+        processed_data = pd.DataFrame()
+        for column in data_set.columns:
+            processed_data[column] = data_set[column].astype(str).apply(
+                lambda row: " ".join(text_processor.pre_process_doc(row)) if pd.notnull(row) else row
+            )
+        return processed_data
