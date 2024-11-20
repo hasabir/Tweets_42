@@ -31,6 +31,6 @@ class Vectorization:
         return Vectorization._vectorize(data_frame, vectorizer)
     
     @staticmethod
-    def vectorize_with_binary_bow(data_frame):
+    def vectorize_with_binary_count(data_frame):
         vectorizer = CountVectorizer(binary=True)
         return Vectorization._vectorize(data_frame, vectorizer)
