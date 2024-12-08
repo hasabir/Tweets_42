@@ -60,6 +60,18 @@ vectorizer = TfidfVectorizer()
 tweet_vectors = vectorizer.fit_transform(long_df['cleaned_tweet'])
 
 
+# transformed_output = vectorizer.transform(long_df['cleaned_tweet'])
+# feature_names = vectorizer.get_feature_names_out()
+# dense_output = transformed_output.todense()
+# bow_vector = pd.DataFrame(
+#     dense_output, 
+#     columns=feature_names,
+#     index=long_df['cleaned_tweet'].index 
+# )
+
+
+# print(bow_vector)
+
 from sklearn.metrics.pairwise import cosine_similarity
 
 # Compute cosine similarity

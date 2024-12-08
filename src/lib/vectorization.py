@@ -5,10 +5,8 @@ from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 
 class Vectorization:
     @staticmethod
-    def _vectorize(processed_data, vectorizer):
-        text_data = processed_data.fillna('').apply(lambda row: ' '.join([' '.join(words) for words in row]), axis=1)
-
-        vectorizer.fit(text_data)
+    def _vectorize(processed_data, vectorizer : CountVectorizer):
+        text_data = processed_data['processed_tweet'].apply(lambda row: ' '.join(row))
 
         transformed_output = vectorizer.transform(text_data)
         feature_names = vectorizer.get_feature_names_out()
@@ -21,16 +19,19 @@ class Vectorization:
                 )
         
     @staticmethod
-    def vectorize_with_tfidf(data_frame):
+    def vectorize_with_tfidf(processed_data):
         vectorizer = TfidfVectorizer()
-        return Vectorization._vectorize(data_frame, vectorizer)
+        text_data = processed_data['processed_tweet'].apply(lambda row: ' '.join(row))
+        return vectorizer.fit_transform(text_data)
     
     @staticmethod
-    def vectorize_with_bow(data_frame):
+    def vectorize_with_bow(processed_data):
+        text_data = processed_data['processed_tweet'].apply(lambda row: ' '.join(row))
         vectorizer = CountVectorizer()
-        return Vectorization._vectorize(data_frame, vectorizer)
+        return vectorizer.fit_transform(text_data)
     
     @staticmethod
-    def vectorize_with_binary_count(data_frame):
+    def vectorize_with_binary_count(processed_data):
         vectorizer = CountVectorizer(binary=True)
-        return Vectorization._vectorize(data_frame, vectorizer)
+        text_data = processed_data['processed_tweet'].apply(lambda row: ' '.join(row))
+        return vectorizer.fit_transform(text_data)
