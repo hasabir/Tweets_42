@@ -21,7 +21,9 @@ class DataPreparation:
         data_frame = DataPreparation.remove_stopwords(data_frame)
         
         data = data_frame.melt(var_name='sentiment', value_name='tweet')
-        data['id'] = data.index
+        # data['id'] = data.index
+        data['id'] = range(1, len(data) + 1) 
+        
         data = data[['id'] + [col for col in data.columns if col != 'id']]
         return data
 

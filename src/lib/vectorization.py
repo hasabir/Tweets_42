@@ -2,21 +2,21 @@ import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 
 
+    # def _vectorize(processed_data, vectorizer : CountVectorizer):
+    #     text_data = processed_data['processed_tweet'].apply(lambda row: ' '.join(row))
+
+    #     transformed_output = vectorizer.transform(text_data)
+    #     feature_names = vectorizer.get_feature_names_out()
+    #     dense_output = transformed_output.todense()   
+        
+    #     return pd.DataFrame(
+    #                 dense_output, 
+    #                 columns=feature_names,
+    #                 index=text_data.index 
+    #             )
 
 class Vectorization:
     @staticmethod
-    def _vectorize(processed_data, vectorizer : CountVectorizer):
-        text_data = processed_data['processed_tweet'].apply(lambda row: ' '.join(row))
-
-        transformed_output = vectorizer.transform(text_data)
-        feature_names = vectorizer.get_feature_names_out()
-        dense_output = transformed_output.todense()   
-        
-        return pd.DataFrame(
-                    dense_output, 
-                    columns=feature_names,
-                    index=text_data.index 
-                )
         
     @staticmethod
     def vectorize_with_tfidf(processed_data):
