@@ -25,6 +25,7 @@ class DataPreparation:
         data['id'] = range(1, len(data) + 1) 
         
         data = data[['id'] + [col for col in data.columns if col != 'id']]
+        data = DataPreparation._update_labels(data)
         return data
 
 
@@ -56,5 +57,17 @@ class DataPreparation:
             )
             
         return new_data_frame
+    @staticmethod
+    def _update_labels(data_set: pd.DataFrame) -> pd.DataFrame:
+        for index, row in data_set.iterrows():
+            if row["sentiment"] == "positive":
+                data_set.at[index, "label"] = 1
+            elif row["sentiment"] == "negative":
+                data_set.at[index, "label"] = -1
+            elif row["sentiment"] == "neutral":
+                data_set.at[index, "label"] = 0
+            else:
+                data_set.at[index, "label"] = None  # If there's an unknown sentiment
+        return data_set
 
     
