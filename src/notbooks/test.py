@@ -9,6 +9,7 @@ from sklearn.metrics import accuracy_score
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.svm import LinearSVC
 from sklearn.linear_model import LogisticRegression
+from sklearn.decomposition import PCA
 import pandas as pd
 import numpy as np
 
@@ -84,11 +85,9 @@ def train_word2vec(processed_tweets):
 
     
     main_embeddings = np.random.normal(0, 0.1, (len(words), EMBEDDING_SIZE))
-    # main_embeddings = np.random.normal(0, 0.1, (len(words), EMBEDDING_SIZE)).astype(np.float32)
     row_norms = np.sqrt((main_embeddings**2).sum(axis=1)).reshape(-1,1)
     main_embeddings = main_embeddings / row_norms
 
-    # context_embeddings = np.random.normal(0, 0.1, (len(words), EMBEDDING_SIZE)).astype(np.float32)
     context_embeddings = np.random.normal(0,0.1,(len(words), EMBEDDING_SIZE))
     row_norms = np.sqrt((context_embeddings**2).sum(axis=1)).reshape(-1,1)
     context_embeddings = context_embeddings / row_norms
@@ -96,17 +95,11 @@ def train_word2vec(processed_tweets):
     main_embeddings = pd.DataFrame(data=main_embeddings, index=words)
     context_embeddings = pd.DataFrame(data=context_embeddings, index=words)
     
-    # def update_embeddings_in_batches(df, main_embeddings, context_embeddings, learning_rate, batch_size=1000):
-    #     for i in range(0, len(df), batch_size):
-    #         batch = df.iloc[i:i + batch_size]
-    #         main_embeddings, context_embeddings = update_embeddings(batch, main_embeddings, context_embeddings, learning_rate)
-    #     return main_embeddings, context_embeddings
 
     
-    learning_rate = 0.1
-    for _ in range(10):
-        main_embeddings, context_embeddings = update_embeddings(df, main_embeddings, context_embeddings, learning_rate)
-        # main_embeddings, context_embeddings = update_embeddings_in_batches(df, main_embeddings, context_embeddings, learning_rate)
+    # learning_rate = 0.1
+    # for _ in range(10):
+    #     main_embeddings, context_embeddings = update_embeddings(df, main_embeddings, context_embeddings, learning_rate)
 
     tweet_embeddings = []
     for tweet in processed_tweets:
@@ -121,7 +114,6 @@ def train_word2vec(processed_tweets):
 
     
 
-from sklearn.decomposition import PCA
 
 
 def train(preprocessing_method, vectorizer, model, description):
@@ -141,15 +133,10 @@ def train(preprocessing_method, vectorizer, model, description):
     if description.split()[0] == 'word2vec':
         X_train_vector = train_word2vec(X_train)
         X_test_vector = train_word2vec(X_test)
-        print(f"----------------- for {description.split()[0]}----------------------")
-        # print(X_train_vector)
     else:
         X_train_vector = vectorizer.fit_transform(X_train.apply(lambda row: ' '.join(row)))
-        print(f"----------------- for {description.split()[0]}----------------------")
-        # print(X_train_vector)
         X_test_vector = vectorizer.transform(X_test.apply(lambda row: ' '.join(row)))
     
-    print(f"y_train: {y_train.shape} | X_train_vector: {X_train_vector.shape}")
     model.fit(X_train_vector, y_train)
     y_pred = model.predict(X_test_vector)
 
@@ -165,14 +152,14 @@ def train(preprocessing_method, vectorizer, model, description):
 
 if __name__ == "__main__":
     preprocessing_methods = {
-        # "lemmatization": Preprocessing().lemmatization,
+        "lemmatization": Preprocessing().lemmatization,
         "tokenization": Preprocessing().tokenization,
-        # "stemming": Preprocessing().stemming,
+        "stemming": Preprocessing().stemming,
     }
     vectorizers = {
-        # "TF-IDF": TfidfVectorizer(),
-        # "CountVectorizer (binary=False)": CountVectorizer(binary=False),
-        # "CountVectorizer (binary=True)": CountVectorizer(binary=True),
+        "TF-IDF": TfidfVectorizer(),
+        "CountVectorizer (binary=False)": CountVectorizer(binary=False),
+        "CountVectorizer (binary=True)": CountVectorizer(binary=True),
         "word2vec": PCA(n_components=2)
     }
     models = {
