@@ -5,4 +5,5 @@ ekphrasis
 seaborn
 numpy
 rapidfuzz
-# sys
+#python -m spacy download en_core_web_md
+#python -m nltk.downloader stopwords
