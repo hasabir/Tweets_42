@@ -8,6 +8,8 @@ from collections import Counter
 import numpy as np
 
 
+import numpy as np
+from collections import Counter
 
 class Word2Vec:
     def __init__(self, processed_tweets, embedding_size, window_size=3, num_negative_samples=3, learning_rate=0.1, epochs=10):
@@ -17,12 +19,19 @@ class Word2Vec:
         self.num_negative_samples = num_negative_samples
         self.learning_rate = learning_rate
         self.epochs = epochs
+        
+        # Vocabulary and mapping
         self.vocab = set(word for tweet in processed_tweets for word in tweet)
         self.word_to_idx = {word: idx for idx, word in enumerate(self.vocab)}
         self.idx_to_word = {idx: word for word, idx in self.word_to_idx.items()}
         self.vocab_size = len(self.vocab)
-        self.main_embeddings = np.random.normal(0, 0.1, (self.vocab_size, self.embedding_size))
-        self.context_embeddings = np.random.normal(0, 0.1, (self.vocab_size, self.embedding_size))
+        
+        # Initialize embeddings
+        scale = np.sqrt(2 / (self.vocab_size + self.embedding_size))  # Xavier/Glorot initialization
+        self.main_embeddings = np.random.uniform(-scale, scale, (self.vocab_size, self.embedding_size))
+        self.context_embeddings = np.random.uniform(-scale, scale, (self.vocab_size, self.embedding_size))
+        
+        # Word frequency for negative sampling
         self.word_counts = Counter(word for tweet in processed_tweets for word in tweet)
         self.word_freq = np.array([self.word_counts[word] for word in self.vocab])
 
@@ -33,28 +42,29 @@ class Word2Vec:
             np.exp(x) / (1 + np.exp(x))
         )
 
-    def _normalize_embeddings(self, embeddings):
-        norms = np.linalg.norm(embeddings, axis=1, keepdims=True)
-        return embeddings / norms
+    def _normalize_embeddings(self):
+        norms = np.linalg.norm(self.main_embeddings, axis=1, keepdims=True)
+        self.main_embeddings /= norms
+        norms = np.linalg.norm(self.context_embeddings, axis=1, keepdims=True)
+        self.context_embeddings /= norms
 
     def _get_negative_samples(self, exclude_idx):
-        """Sample negative examples based on word frequencies."""
         probabilities = np.array([freq ** 0.75 for freq in self.word_freq])
         probabilities /= probabilities.sum()
+        negative_samples = set()
 
-        negative_samples = []
-        while len(negative_samples) < self.num_samples:
+        while len(negative_samples) < self.num_negative_samples:
             sampled_idx = np.random.choice(self.vocab_size, p=probabilities)
             if sampled_idx != exclude_idx:
-                negative_samples.append(sampled_idx)
-        return negative_samples
+                negative_samples.add(sampled_idx)
+        return list(negative_samples)
 
     def _update_embeddings(self, center_idx, context_idx, label):
         center_vector = self.main_embeddings[center_idx]
         context_vector = self.context_embeddings[context_idx]
 
         dot_product = np.dot(center_vector, context_vector)
-        prediction = self.sigmoid(dot_product)
+        prediction = self._sigmoid(dot_product)
         error = label - prediction
 
         grad_center = error * context_vector
@@ -62,9 +72,9 @@ class Word2Vec:
 
         self.main_embeddings[center_idx] += self.learning_rate * grad_center
         self.context_embeddings[context_idx] += self.learning_rate * grad_context
-    
+
     def _train(self):
-        for _ in range(self.epochs):
+        for epoch in range(self.epochs):
             for tweet in self.processed_tweets:
                 for center_idx, center_word in enumerate(tweet):
                     center_word_idx = self.word_to_idx[center_word]
@@ -76,16 +86,17 @@ class Word2Vec:
                             continue
                         context_word_idx = self.word_to_idx[tweet[context_idx]]
 
+                        # Positive sample
                         self._update_embeddings(center_word_idx, context_word_idx, 1)
 
+                        # Negative samples
                         negative_samples = self._get_negative_samples(center_word_idx)
                         for negative_idx in negative_samples:
                             self._update_embeddings(center_word_idx, negative_idx, 0)
-
-            self.main_embeddings = self._normalize_embeddings(self.main_embeddings)
-            self.context_embeddings = self._normalize_embeddings(self.context_embeddings)
-
-
+            
+            # Normalize embeddings after every epoch
+            self._normalize_embeddings()
+            print(f"Epoch {epoch + 1}/{self.epochs} completed")
 
     def word2vec(self):
         self._train()
@@ -99,4 +110,3 @@ class Word2Vec:
             tweet_embeddings.append(tweet_embedding)
 
         return np.array(tweet_embeddings)
-
