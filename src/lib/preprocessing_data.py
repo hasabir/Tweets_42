@@ -87,7 +87,7 @@ class Preprocessing:
         )
 
         data_set['processed_tweet'] = data_set['tweet'].apply(
-            lambda x: " ".join(text_processor.pre_process_doc(x) if pd.notnull(x) else x))
+            lambda x: text_processor.pre_process_doc(x) if pd.notnull(x) else x)
         return data_set
 
 
