@@ -30,13 +30,16 @@ class DataPreparation:
 
     @staticmethod
     def remove_stopwords(data_frame) -> pd.DataFrame:
+        import string
         from nltk.corpus import stopwords
-        stop_words = set(stopwords.words('english')) #python -m nltk.downloader stopwords
-
+        stop_words = set(stopwords.words('english'))
+        
         new_data_frame: pd.DataFrame = data_frame.copy()
         for column in new_data_frame.columns:
-            new_data_frame[column] = new_data_frame[column].apply(
-                lambda row: ' '.join([word for word in row.split() if word.lower() not in stop_words])
+            new_data_frame[column] = new_data_frame[column].str.replace(
+                f"[{string.punctuation}]", "", regex=True
+            ).apply(
+                lambda row: ' '.join(word for word in row.split() if word.lower() not in stop_words)
             )
         
         return new_data_frame
