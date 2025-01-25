@@ -13,28 +13,27 @@ class Preprocessing:
         pass
 
     @staticmethod
-    def tokenization(data_set) -> list:
-        tokenizer = nltk.tokenize.RegexpTokenizer(r'\w+')
+    def tokenization(data_set):
 
-        data_set['processed_tweet'] = data_set['tweet'].apply(lambda x: tokenizer.tokenize(x))
+        data_set['processed_tweets'] = data_set['tweet'].apply(lambda row: row.split())
         return data_set
 
 
     @staticmethod
-    def stemming(data_set) -> list:
+    def stemming(data_set):
         from nltk.stem import PorterStemmer
 
         stemmer = PorterStemmer()
-        tokens = data_set['tweet'].apply(lambda x: x.split())
-        data_set['processed_tweet'] = tokens.apply(lambda x: [stemmer.stem(y) for y in x])
+        tokens = data_set['tweet'].apply(lambda row: row.split())
+        data_set['processed_tweets'] = tokens.apply(lambda x: [stemmer.stem(y) for y in x])
         return data_set
         
         
     @staticmethod
-    def lemmatization(data_set) -> list:
+    def lemmatization(data_set):
 
         nlp = spacy.load('en_core_web_md') #python -m spacy download en_core_web_md
-        data_set['processed_tweet'] = data_set['tweet'].apply(lambda x: [token.lemma_ for token in nlp(x)])
+        data_set['processed_tweets'] = data_set['tweet'].apply(lambda x: [token.lemma_ for token in nlp(x)])
         return data_set
 
     
@@ -49,10 +48,10 @@ class Preprocessing:
 
 
     @staticmethod
-    def stemming_with_misspelling(data_set) -> list:
+    def stemming_with_misspelling(data_set):
         stemmer = PorterStemmer()
         tokens = data_set['tweet'].apply(lambda x: x.split())
-        data_set['processed_tweet'] = tokens.apply(lambda x: 
+        data_set['processed_tweets'] = tokens.apply(lambda x: 
                                 [stemmer.stem(Preprocessing._get_closest_word(y)) for y in x])
         return data_set
 
@@ -61,7 +60,7 @@ class Preprocessing:
     @staticmethod
     def lemmatization_with_misspelling(data_set):
         nlp = spacy.load('en_core_web_md')
-        data_set['processed_tweet'] = data_set['tweet'].apply(lambda x:
+        data_set['processed_tweets'] = data_set['tweet'].apply(lambda x:
                                                                 [token.lemma_ for token in nlp
                                                                 (" ".join(Preprocessing._get_closest_word(word) 
                                                                                 for word in x.split()))
@@ -86,7 +85,7 @@ class Preprocessing:
             dicts=[emoticons]
         )
 
-        data_set['processed_tweet'] = data_set['tweet'].apply(
+        data_set['processed_tweets'] = data_set['tweet'].apply(
             lambda x: text_processor.pre_process_doc(x) if pd.notnull(x) else x)
         return data_set
 

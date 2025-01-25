@@ -12,15 +12,15 @@ import numpy as np
 from collections import Counter
 
 class Word2Vec:
-    def __init__(self, processed_tweets, embedding_size, window_size=3, num_negative_samples=3, learning_rate=0.1, epochs=10):
-        self.processed_tweets = processed_tweets
+    def __init__(self, processed_tweetss, embedding_size, window_size=3, num_negative_samples=3, learning_rate=0.1, epochs=10):
+        self.processed_tweetss = processed_tweetss
         self.embedding_size = embedding_size
         self.window_size = window_size
         self.num_negative_samples = num_negative_samples
         self.learning_rate = learning_rate
         self.epochs = epochs
         
-        self.vocab = set(word for tweet in processed_tweets for word in tweet)
+        self.vocab = set(word for tweet in processed_tweetss for word in tweet)
         self.word_to_idx = {word: idx for idx, word in enumerate(self.vocab)}
         self.idx_to_word = {idx: word for word, idx in self.word_to_idx.items()}
         self.vocab_size = len(self.vocab)
@@ -29,7 +29,7 @@ class Word2Vec:
         self.main_embeddings = np.random.uniform(-scale, scale, (self.vocab_size, self.embedding_size))
         self.context_embeddings = np.random.uniform(-scale, scale, (self.vocab_size, self.embedding_size))
         
-        self.word_counts = Counter(word for tweet in processed_tweets for word in tweet)
+        self.word_counts = Counter(word for tweet in processed_tweetss for word in tweet)
         self.word_freq = np.array([self.word_counts[word] for word in self.vocab])
 
     def _sigmoid(self, x):
@@ -72,7 +72,7 @@ class Word2Vec:
 
     def _train(self):
         for epoch in range(self.epochs):
-            for tweet in self.processed_tweets:
+            for tweet in self.processed_tweetss:
                 for center_idx, center_word in enumerate(tweet):
                     center_word_idx = self.word_to_idx[center_word]
                     start = max(center_idx - self.window_size, 0)
@@ -94,7 +94,7 @@ class Word2Vec:
     def word2vec(self):
         self._train()
         tweet_embeddings = []
-        for tweet in self.processed_tweets:
+        for tweet in self.processed_tweetss:
             word_indices = [self.word_to_idx[word] for word in tweet if word in self.word_to_idx]
             if word_indices:
                 tweet_embedding = self.main_embeddings[word_indices].mean(axis=0)

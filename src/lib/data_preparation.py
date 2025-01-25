@@ -11,14 +11,14 @@ class DataPreparation:
             "negative": '../data/processedNegative.csv',
             "neutral": '../data/processedNeutral.csv'
         }
-        
+
         data_frame = pd.DataFrame()
         for label, path in file_paths.items():
             data_frame[label] = pd.read_csv(path, header=None).T.squeeze()
 
         data_frame = data_frame.fillna('').astype(str)
         data_frame = DataPreparation.clean_data(data_frame)
-        data_frame = DataPreparation.remove_stopwords(data_frame)
+        # data_frame = DataPreparation.remove_stopwords(data_frame)
         
         data = data_frame.melt(var_name='sentiment', value_name='tweet')
         data['id'] = range(1, len(data) + 1) 
