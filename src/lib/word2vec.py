@@ -12,7 +12,7 @@ import numpy as np
 from collections import Counter
 
 class Word2Vec:
-    def __init__(self, processed_tweetss, embedding_size, window_size=3, num_negative_samples=3, learning_rate=0.1, epochs=10):
+    def __init__(self, processed_tweetss, embedding_size, window_size=3, num_negative_samples=3, learning_rate=0.1, epochs=50):
         self.processed_tweetss = processed_tweetss
         self.embedding_size = embedding_size
         self.window_size = window_size
