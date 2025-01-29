@@ -7,9 +7,9 @@ class DataPreparation:
     @staticmethod
     def load_data():
         file_paths = {
-            "positive": '../data/processedPositive.csv',
-            "negative": '../data/processedNegative.csv',
-            "neutral": '../data/processedNeutral.csv'
+            "positive": '../data/raw_data/processedPositive.csv',
+            "negative": '../data/raw_data/processedNegative.csv',
+            "neutral": '../data/raw_data/processedNeutral.csv'
         }
 
         data_frame = pd.DataFrame()
@@ -28,21 +28,7 @@ class DataPreparation:
         return data
 
 
-    @staticmethod
-    def remove_stopwords(data_frame) -> pd.DataFrame:
-        import string
-        from nltk.corpus import stopwords
-        stop_words = set(stopwords.words('english'))
-        
-        new_data_frame: pd.DataFrame = data_frame.copy()
-        for column in new_data_frame.columns:
-            new_data_frame[column] = new_data_frame[column].str.replace(
-                f"[{string.punctuation}]", "", regex=True
-            ).apply(
-                lambda row: ' '.join(word for word in row.split() if word.lower() not in stop_words)
-            )
-        
-        return new_data_frame
+
     
     
     @staticmethod

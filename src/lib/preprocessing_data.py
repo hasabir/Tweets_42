@@ -90,10 +90,31 @@ class Preprocessing:
         return data_set
 
 
+    @staticmethod
+    def remove_stopwords_from_text(text, stop_words):
+        if not isinstance(text, str):
+            return ''
+        words = text.split()
+        filtered_words = [word for word in words if word.lower() not in stop_words]
+        return ' '.join(filtered_words)
+
+    @staticmethod
+    def remove_stopwords(data_frame: pd.DataFrame) -> pd.DataFrame:
+        from nltk.corpus import stopwords
+        stop_words = set(stopwords.words('english')) #python -m nltk.downloader stopwords
+        stop_words = set(stopwords.words('english'))
+        data_frame['tweet'] = data_frame['tweet'].apply( Preprocessing.remove_stopwords_from_text, args=(stop_words,))
+        return data_frame
+
+    @staticmethod
+    def lemmatization_with_stopwords_removal(data_frame) -> pd.DataFrame:
+        data_frame = Preprocessing.remove_stopwords(data_frame)
+        # return data_frame
+        return Preprocessing.lemmatization(data_frame)
 
 
 
-
-
-
+data_set = pd.read_csv('../data/raw_splits/train.csv')
+data_set = Preprocessing.lemmatization_with_stopwords_removal(data_set)
+# print(data_set.head())
 
