@@ -103,3 +103,42 @@ class Word2Vec:
             tweet_embeddings.append(tweet_embedding)
 
         return np.array(tweet_embeddings)
+
+# from sklearn.linear_model import LogisticRegression
+# from sklearn.metrics import accuracy_score
+# from .preprocessing_data import Preprocessing
+
+
+# def main():
+    
+#     train_df = Preprocessing().lemmatization_with_stopwords_removal(pd.read_csv('../data/raw_splits/train.csv'))
+#     test_df = Preprocessing().lemmatization_with_stopwords_removal(pd.read_csv('../data/raw_splits/test.csv'))
+
+#     X_train = train_df['processed_tweets']
+#     X_test = test_df['processed_tweets']
+
+#     y_train = train_df['label'].to_numpy().astype(int)
+#     y_test = test_df['label'].to_numpy().astype(int)
+
+#     vectorizer = Word2Vec(X_train, 10)
+#     X_train_vector = vectorizer.word2vec()
+#     X_test_vector = vectorizer.word2vec()
+
+#     model = LogisticRegression()
+
+#     model.fit(X_train_vector, y_train)
+#     y_pred = model.predict(X_test_vector)
+
+#     accuracy = accuracy_score(y_test, y_pred)
+#     print(f"Accuracy for Word to vec: {accuracy}")
+    
+    
+# if __name__ == "__main__":
+#     main()
+
+
+
+# import torch
+# print(torch.cuda.is_available())  # Should print True
+# print(torch.cuda.device_count())  # Should print the number of GPUs
+# print(torch.cuda.get_device_name(0))  # Should print "NVIDIA GeForce RTX 4050 Laptop GPU"
