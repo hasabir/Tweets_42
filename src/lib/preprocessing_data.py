@@ -111,6 +111,20 @@ class Preprocessing:
         data_frame = Preprocessing.remove_stopwords(data_frame)
         # return data_frame
         return Preprocessing.lemmatization(data_frame)
+    
+    @staticmethod
+    def remove_duplicates(tweet_vectors):
+        from sklearn.metrics.pairwise import cosine_similarity
+        tweet_vectors.reset_index(drop=True, inplace=True)
+        similarity_matrix = cosine_similarity(tweet_vectors)
+        similarity_df = pd.DataFrame(similarity_matrix)
+        
+        tweet_similarity_scores = similarity_df.sum(axis=1) - 1  
+        
+        top_10_similar_tweets = tweet_similarity_scores.nlargest(10)
+
+        tweet_vectors = tweet_vectors.drop(index=top_10_similar_tweets.index[1:])
+        return tweet_vectors
 
 
 

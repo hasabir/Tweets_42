@@ -1,66 +1,63 @@
-import sys
-import os
-import numpy as np
-
-sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), '../')))
-
-from collections import Counter
-import numpy as np
-
-
-import numpy as np
+import cupy as cp
 from collections import Counter
 
 class Word2Vec:
-    def __init__(self, processed_tweetss, embedding_size, window_size=3, num_negative_samples=3, learning_rate=0.1, epochs=50):
-        self.processed_tweetss = processed_tweetss
+    def __init__(self, processed_tweets, embedding_size, window_size=3, 
+                 num_negative_samples=3, learning_rate=0.1, epochs=50):
+        self.processed_tweets = processed_tweets
         self.embedding_size = embedding_size
         self.window_size = window_size
         self.num_negative_samples = num_negative_samples
         self.learning_rate = learning_rate
         self.epochs = epochs
         
-        self.vocab = set(word for tweet in processed_tweetss for word in tweet)
+        # Build vocabulary from training tweets with consistent ordering
+        self.word_counts = Counter(word for tweet in processed_tweets for word in tweet)
+        self.vocab = sorted(self.word_counts.keys())
         self.word_to_idx = {word: idx for idx, word in enumerate(self.vocab)}
-        self.idx_to_word = {idx: word for word, idx in self.word_to_idx.items()}
+        self.idx_to_word = {idx: word for idx, word in enumerate(self.vocab)}
         self.vocab_size = len(self.vocab)
         
-        scale = np.sqrt(2 / (self.vocab_size + self.embedding_size))  # Xavier/Glorot initialization
-        self.main_embeddings = np.random.uniform(-scale, scale, (self.vocab_size, self.embedding_size))
-        self.context_embeddings = np.random.uniform(-scale, scale, (self.vocab_size, self.embedding_size))
+        # Xavier/Glorot initialization for embeddings
+        scale = cp.sqrt(2 / (self.vocab_size + self.embedding_size))
+        self.main_embeddings = cp.random.uniform(-scale, scale, (self.vocab_size, self.embedding_size))
+        self.context_embeddings = cp.random.uniform(-scale, scale, (self.vocab_size, self.embedding_size))
         
-        self.word_counts = Counter(word for tweet in processed_tweetss for word in tweet)
-        self.word_freq = np.array([self.word_counts[word] for word in self.vocab])
+        self.word_freq = cp.array([self.word_counts[word] for word in self.vocab], dtype=cp.float32)
 
     def _sigmoid(self, x):
-        return np.where(
+        return cp.where(
             x >= 0,
-            1 / (1 + np.exp(-x)),
-            np.exp(x) / (1 + np.exp(x))
+            1 / (1 + cp.exp(-x)),
+            cp.exp(x) / (1 + cp.exp(x))
         )
 
     def _normalize_embeddings(self):
-        norms = np.linalg.norm(self.main_embeddings, axis=1, keepdims=True)
+        norms = cp.linalg.norm(self.main_embeddings, axis=1, keepdims=True)
         self.main_embeddings /= norms
-        norms = np.linalg.norm(self.context_embeddings, axis=1, keepdims=True)
+        norms = cp.linalg.norm(self.context_embeddings, axis=1, keepdims=True)
         self.context_embeddings /= norms
 
+
     def _get_negative_samples(self, exclude_idx):
-        probabilities = np.array([freq ** 0.75 for freq in self.word_freq])
+        probabilities = cp.power(self.word_freq, 0.75)
         probabilities /= probabilities.sum()
         negative_samples = set()
 
         while len(negative_samples) < self.num_negative_samples:
-            sampled_idx = np.random.choice(self.vocab_size, p=probabilities)
+            # Specify size=1 and extract the element
+            sampled_idx = int(cp.random.choice(self.vocab_size, size=1, p=cp.asnumpy(probabilities))[0])
+
             if sampled_idx != exclude_idx:
                 negative_samples.add(sampled_idx)
         return list(negative_samples)
+
 
     def _update_embeddings(self, center_idx, context_idx, label):
         center_vector = self.main_embeddings[center_idx]
         context_vector = self.context_embeddings[context_idx]
 
-        dot_product = np.dot(center_vector, context_vector)
+        dot_product = cp.dot(center_vector, context_vector)
         prediction = self._sigmoid(dot_product)
         error = label - prediction
 
@@ -72,73 +69,251 @@ class Word2Vec:
 
     def _train(self):
         for epoch in range(self.epochs):
-            for tweet in self.processed_tweetss:
+            for tweet in self.processed_tweets:
                 for center_idx, center_word in enumerate(tweet):
                     center_word_idx = self.word_to_idx[center_word]
                     start = max(center_idx - self.window_size, 0)
                     end = min(center_idx + self.window_size + 1, len(tweet))
-
                     for context_idx in range(start, end):
                         if center_idx == context_idx:
                             continue
                         context_word_idx = self.word_to_idx[tweet[context_idx]]
-
                         self._update_embeddings(center_word_idx, context_word_idx, 1)
-
                         negative_samples = self._get_negative_samples(center_word_idx)
                         for negative_idx in negative_samples:
                             self._update_embeddings(center_word_idx, negative_idx, 0)
-            
             self._normalize_embeddings()
 
-    def word2vec(self):
+    def train(self):
+        """Run training to update the embeddings."""
         self._train()
+
+    def transform(self, tweets):
+        """Convert a list of tweets (list of token lists) to embeddings using the trained embeddings."""
         tweet_embeddings = []
-        for tweet in self.processed_tweetss:
+        for tweet in tweets:
             word_indices = [self.word_to_idx[word] for word in tweet if word in self.word_to_idx]
             if word_indices:
-                tweet_embedding = self.main_embeddings[word_indices].mean(axis=0)
+                # Compute the mean embedding for the tweet and move it back to CPU
+                tweet_embedding = cp.asnumpy(self.main_embeddings[word_indices].mean(axis=0))
             else:
-                tweet_embedding = np.zeros(self.embedding_size)
+                tweet_embedding = cp.asnumpy(cp.zeros(self.embedding_size))
             tweet_embeddings.append(tweet_embedding)
-
-        return np.array(tweet_embeddings)
-
-# from sklearn.linear_model import LogisticRegression
-# from sklearn.metrics import accuracy_score
-# from .preprocessing_data import Preprocessing
+        return tweet_embeddings
 
 
-# def main():
+
+
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), '../')))
+import pandas as pd
+from lib.preprocessing_data import Preprocessing
+
+from lib.word2vec import Word2Vec
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score
+
+print("Preprocess the data")
+train_df = Preprocessing().lemmatization_with_stopwords_removal(pd.read_csv('../data/raw_splits/train.csv'))
+test_df = Preprocessing().lemmatization_with_stopwords_removal(pd.read_csv('../data/raw_splits/test.csv'))
+
+X_train = train_df['processed_tweets']
+X_test = test_df['processed_tweets']
+
+y_train = train_df['label'].to_numpy().astype(int)
+y_test = test_df['label'].to_numpy().astype(int)
+
+print("Train the Word2Vec model on the training tweets")
+vectorizer = Word2Vec(X_train, embedding_size=50)
+vectorizer.train()
+
+print("Transform both training and test data using the learned embeddings")
+X_train_vector = vectorizer.transform(X_train)
+X_test_vector = vectorizer.transform(X_test)
+
+print("Train and evaluate a logistic regression classifier")
+model = LogisticRegression()
+model.fit(X_train_vector, y_train)
+y_pred = model.predict(X_test_vector)
+
+accuracy = accuracy_score(y_test, y_pred)
+print(f"Accuracy for Word2Vec: {accuracy}")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# import sys
+# import os
+# import numpy as np
+
+# sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), '../')))
+
+# from collections import Counter
+# import numpy as np
+
+
+# import numpy as np
+# from collections import Counter
+
+# class Word2Vec:
+#     def __init__(self, processed_tweetss, embedding_size, window_size=3, num_negative_samples=3, learning_rate=0.1, epochs=50):
+#         self.processed_tweetss = processed_tweetss
+#         self.embedding_size = embedding_size
+#         self.window_size = window_size
+#         self.num_negative_samples = num_negative_samples
+#         self.learning_rate = learning_rate
+#         self.epochs = epochs
+        
+#         self.vocab = set(word for tweet in processed_tweetss for word in tweet)
+#         self.word_to_idx = {word: idx for idx, word in enumerate(self.vocab)}
+#         self.idx_to_word = {idx: word for word, idx in self.word_to_idx.items()}
+#         self.vocab_size = len(self.vocab)
+        
+#         scale = np.sqrt(2 / (self.vocab_size + self.embedding_size))  # Xavier/Glorot initialization
+#         self.main_embeddings = np.random.uniform(-scale, scale, (self.vocab_size, self.embedding_size))
+#         self.context_embeddings = np.random.uniform(-scale, scale, (self.vocab_size, self.embedding_size))
+        
+#         self.word_counts = Counter(word for tweet in processed_tweetss for word in tweet)
+#         self.word_freq = np.array([self.word_counts[word] for word in self.vocab])
+
+#     def _sigmoid(self, x):
+#         return np.where(
+#             x >= 0,
+#             1 / (1 + np.exp(-x)),
+#             np.exp(x) / (1 + np.exp(x))
+#         )
+
+#     def _normalize_embeddings(self):
+#         norms = np.linalg.norm(self.main_embeddings, axis=1, keepdims=True)
+#         self.main_embeddings /= norms
+#         norms = np.linalg.norm(self.context_embeddings, axis=1, keepdims=True)
+#         self.context_embeddings /= norms
+
+#     def _get_negative_samples(self, exclude_idx):
+#         probabilities = np.array([freq ** 0.75 for freq in self.word_freq])
+#         probabilities /= probabilities.sum()
+#         negative_samples = set()
+
+#         while len(negative_samples) < self.num_negative_samples:
+#             sampled_idx = np.random.choice(self.vocab_size, p=probabilities)
+#             if sampled_idx != exclude_idx:
+#                 negative_samples.add(sampled_idx)
+#         return list(negative_samples)
+
+#     def _update_embeddings(self, center_idx, context_idx, label):
+#         center_vector = self.main_embeddings[center_idx]
+#         context_vector = self.context_embeddings[context_idx]
+
+#         dot_product = np.dot(center_vector, context_vector)
+#         prediction = self._sigmoid(dot_product)
+#         error = label - prediction
+
+#         grad_center = error * context_vector
+#         grad_context = error * center_vector
+
+#         self.main_embeddings[center_idx] += self.learning_rate * grad_center
+#         self.context_embeddings[context_idx] += self.learning_rate * grad_context
+
+#     def _train(self):
+#         for epoch in range(self.epochs):
+#             for tweet in self.processed_tweetss:
+#                 for center_idx, center_word in enumerate(tweet):
+#                     center_word_idx = self.word_to_idx[center_word]
+#                     start = max(center_idx - self.window_size, 0)
+#                     end = min(center_idx + self.window_size + 1, len(tweet))
+
+#                     for context_idx in range(start, end):
+#                         if center_idx == context_idx:
+#                             continue
+#                         context_word_idx = self.word_to_idx[tweet[context_idx]]
+
+#                         self._update_embeddings(center_word_idx, context_word_idx, 1)
+
+#                         negative_samples = self._get_negative_samples(center_word_idx)
+#                         for negative_idx in negative_samples:
+#                             self._update_embeddings(center_word_idx, negative_idx, 0)
+            
+#             self._normalize_embeddings()
+
+#     def word2vec(self):
+#         self._train()
+#         tweet_embeddings = []
+#         for tweet in self.processed_tweetss:
+#             word_indices = [self.word_to_idx[word] for word in tweet if word in self.word_to_idx]
+#             if word_indices:
+#                 tweet_embedding = self.main_embeddings[word_indices].mean(axis=0)
+#             else:
+#                 tweet_embedding = np.zeros(self.embedding_size)
+#             tweet_embeddings.append(tweet_embedding)
+
+#         return np.array(tweet_embeddings)
+
+# # from sklearn.linear_model import LogisticRegression
+# # from sklearn.metrics import accuracy_score
+# # from .preprocessing_data import Preprocessing
+
+
+# # def main():
     
-#     train_df = Preprocessing().lemmatization_with_stopwords_removal(pd.read_csv('../data/raw_splits/train.csv'))
-#     test_df = Preprocessing().lemmatization_with_stopwords_removal(pd.read_csv('../data/raw_splits/test.csv'))
+# #     train_df = Preprocessing().lemmatization_with_stopwords_removal(pd.read_csv('../data/raw_splits/train.csv'))
+# #     test_df = Preprocessing().lemmatization_with_stopwords_removal(pd.read_csv('../data/raw_splits/test.csv'))
 
-#     X_train = train_df['processed_tweets']
-#     X_test = test_df['processed_tweets']
+# #     X_train = train_df['processed_tweets']
+# #     X_test = test_df['processed_tweets']
 
-#     y_train = train_df['label'].to_numpy().astype(int)
-#     y_test = test_df['label'].to_numpy().astype(int)
+# #     y_train = train_df['label'].to_numpy().astype(int)
+# #     y_test = test_df['label'].to_numpy().astype(int)
 
-#     vectorizer = Word2Vec(X_train, 10)
-#     X_train_vector = vectorizer.word2vec()
-#     X_test_vector = vectorizer.word2vec()
+# #     vectorizer = Word2Vec(X_train, 10)
+# #     X_train_vector = vectorizer.word2vec()
+# #     X_test_vector = vectorizer.word2vec()
 
-#     model = LogisticRegression()
+# #     model = LogisticRegression()
 
-#     model.fit(X_train_vector, y_train)
-#     y_pred = model.predict(X_test_vector)
+# #     model.fit(X_train_vector, y_train)
+# #     y_pred = model.predict(X_test_vector)
 
-#     accuracy = accuracy_score(y_test, y_pred)
-#     print(f"Accuracy for Word to vec: {accuracy}")
+# #     accuracy = accuracy_score(y_test, y_pred)
+# #     print(f"Accuracy for Word to vec: {accuracy}")
     
     
-# if __name__ == "__main__":
-#     main()
+# # if __name__ == "__main__":
+# #     main()
 
 
 
-# import torch
-# print(torch.cuda.is_available())  # Should print True
-# print(torch.cuda.device_count())  # Should print the number of GPUs
-# print(torch.cuda.get_device_name(0))  # Should print "NVIDIA GeForce RTX 4050 Laptop GPU"
+# # import torch
+# # print(torch.cuda.is_available())  # Should print True
+# # print(torch.cuda.device_count())  # Should print the number of GPUs
+# # print(torch.cuda.get_device_name(0))  # Should print "NVIDIA GeForce RTX 4050 Laptop GPU"
