@@ -1,18 +1,12 @@
-import sys
 import os
+import sys
 import numpy as np
+from collections import Counter
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), '../')))
 
-from collections import Counter
-import numpy as np
-
-
-import numpy as np
-from collections import Counter
-
 class Word2Vec:
-    def __init__(self, processed_tweetss, embedding_size, window_size=3, num_negative_samples=3, learning_rate=0.1, epochs=50):
+    def __init__(self, processed_tweetss, embedding_size, window_size=3, num_negative_samples=3, learning_rate=0.1, epochs=10):
         self.processed_tweetss = processed_tweetss
         self.embedding_size = embedding_size
         self.window_size = window_size
@@ -20,12 +14,14 @@ class Word2Vec:
         self.learning_rate = learning_rate
         self.epochs = epochs
         
+        # Build vocabulary from the training tweets
         self.vocab = set(word for tweet in processed_tweetss for word in tweet)
         self.word_to_idx = {word: idx for idx, word in enumerate(self.vocab)}
         self.idx_to_word = {idx: word for word, idx in self.word_to_idx.items()}
         self.vocab_size = len(self.vocab)
         
-        scale = np.sqrt(2 / (self.vocab_size + self.embedding_size))  # Xavier/Glorot initialization
+        # Xavier/Glorot initialization for embeddings
+        scale = np.sqrt(2 / (self.vocab_size + self.embedding_size))
         self.main_embeddings = np.random.uniform(-scale, scale, (self.vocab_size, self.embedding_size))
         self.context_embeddings = np.random.uniform(-scale, scale, (self.vocab_size, self.embedding_size))
         
@@ -72,6 +68,7 @@ class Word2Vec:
 
     def _train(self):
         for epoch in range(self.epochs):
+            print(f"Epoch {epoch + 1}/{self.epochs}")
             for tweet in self.processed_tweetss:
                 for center_idx, center_word in enumerate(tweet):
                     center_word_idx = self.word_to_idx[center_word]
@@ -82,7 +79,6 @@ class Word2Vec:
                         if center_idx == context_idx:
                             continue
                         context_word_idx = self.word_to_idx[tweet[context_idx]]
-
                         self._update_embeddings(center_word_idx, context_word_idx, 1)
 
                         negative_samples = self._get_negative_samples(center_word_idx)
@@ -92,6 +88,10 @@ class Word2Vec:
             self._normalize_embeddings()
 
     def word2vec(self):
+        """
+        Trains the Word2Vec model on the provided training tweets and returns 
+        an array of tweet embeddings (by averaging word embeddings).
+        """
         self._train()
         tweet_embeddings = []
         for tweet in self.processed_tweetss:
@@ -101,6 +101,20 @@ class Word2Vec:
             else:
                 tweet_embedding = np.zeros(self.embedding_size)
             tweet_embeddings.append(tweet_embedding)
-
         return np.array(tweet_embeddings)
+    
+    def transform_tweets(self, tweets):
+        """
+        Transforms new tweets into embeddings using the trained word embeddings.
+        """
+        tweet_embeddings = []
+        for tweet in tweets:
+            word_indices = [self.word_to_idx[word] for word in tweet if word in self.word_to_idx]
+            if word_indices:
+                tweet_embedding = self.main_embeddings[word_indices].mean(axis=0)
+            else:
+                tweet_embedding = np.zeros(self.embedding_size)
+            tweet_embeddings.append(tweet_embedding)
+        return np.array(tweet_embeddings)
+
 
